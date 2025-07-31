@@ -8,7 +8,9 @@ add-extensions:
     version: *runtime-version
     no-autodownload: false
     autodelete: false
+
 command: redot
+appstream-compose: false
 
 build-options:
   env:
@@ -57,8 +59,9 @@ modules:
 
     sources:
       - type: archive
-        url: https://github.com/brailcom/speechd/releases/download/0.11.5/speech-dispatcher-0.11.5.tar.gz
-        sha512: d6d880bce0ae5bc2a5d519ef7740c689ae8b4b0bb658379762810e4beae3e465a429fbe19f7c490e89db0ea6a36aedd4b2287ac9251b90059b5c2cb3c0dd8a28
+        url: https://github.com/brailcom/speechd/releases/download/0.12.1/speech-dispatcher-0.12.1.tar.gz
+        # SHA512: f386bb25d80e85153db4907c5adece519a86084676a39f958a4f56e53bb957cb9b1232c4e648e73ef8dc5d1ab8e0cd64a5e0d151775fdd8f3b175f47f4864422
+        sha512: f386bb25d80e85153db4907c5adece519a86084676a39f958a4f56e53bb957cb9b1232c4e648e73ef8dc5d1ab8e0cd64a5e0d151775fdd8f3b175f47f4864422
         x-checker-data:
           type: anitya
           project-id: 13411
@@ -91,8 +94,9 @@ modules:
 
     sources:
       - type: archive
-        sha256: cad573b329b6a5bc7e654b01f0231064acc979026af68a9e467ddb32bf2ee501
-        url: https://downloads.sourceforge.net/project/scons/scons/4.8.1/SCons-4.8.1.tar.gz
+        # SHA256: e2d78aa56e4646e5dbaf50c0758c6d1e4b0418464d8d6d07a09beb6cf257538f
+        sha256: e2d78aa56e4646e5dbaf50c0758c6d1e4b0418464d8d6d07a09beb6cf257538f
+        url: https://downloads.sourceforge.net/project/scons/scons/4.9.1/SCons-4.9.1.tar.gz
         x-checker-data:
           type: anitya
           project-id: 4770
@@ -105,15 +109,11 @@ modules:
     buildsystem: simple
 
     sources:
-      # Source code tarball
+      # Binary tarball (pre-built)
       - type: archive
-        sha256: e2eee23ede9efcdb09fa967c09ff48d12d0ff34e70eb3f30276275a79e6e8ad4
-        url: https://github.com/Redot-Engine/redot-engine/archive/refs/tags/redot-4.3-stable.tar.gz
-
-      # Binary tarball
-      - type: archive
-        sha256: 8bd4c52fa673bfb566c9ebc8da483f444c37625afaad48417f10ec3ee38d65fe
-        url: https://github.com/Redot-Engine/redot-engine/releases/download/redot-4.3-stable/Redot_v4.3-stable_linux.x86_64.zip
+        # SHA256: bad76b53e1854648fba3f3b631b996a160e58f1b73076e1e9b1854f8d1ac6f05
+        sha256: bad76b53e1854648fba3f3b631b996a160e58f1b73076e1e9b1854f8d1ac6f05
+        url: https://github.com/Redot-Engine/redot-engine/releases/download/redot-4.3.1-stable/Redot_v4.3.1-stable_linux.x86_64.zip
 
       - type: script
         dest-filename: redot.sh
@@ -125,14 +125,27 @@ modules:
       - type: file
         path: org.redotengine.Redot.metainfo.xml
 
+      - type: file
+        path: icon.svg
+
     build-commands:
       - install -D -m755 Redot_*_linux.* /app/bin/redot-bin
       - install -D -m755 redot.sh /app/bin/redot
-      - desktop-file-edit --set-icon=$FLATPAK_ID misc/dist/linux/$FLATPAK_ID.desktop
-      - install -Dm644 misc/dist/linux/$FLATPAK_ID.desktop /app/share/applications/$FLATPAK_ID.desktop
-      - install -Dm644 misc/dist/linux/$FLATPAK_ID.xml /app/share/mime/packages/$FLATPAK_ID.xml
+      # Create desktop file for Redot
+      - |
+        cat > org.redotengine.Redot.desktop << 'EOF'
+        [Desktop Entry]
+        Name=Redot Engine
+        Comment=Free and open source 2D and 3D game engine
+        Exec=redot
+        Icon=org.redotengine.Redot
+        Terminal=false
+        Type=Application
+        Categories=Development;IDE;
+        StartupWMClass=Redot
+        EOF
+      - install -Dm644 org.redotengine.Redot.desktop /app/share/applications/$FLATPAK_ID.desktop
       - install -Dm644 $FLATPAK_ID.metainfo.xml /app/share/metainfo/$FLATPAK_ID.metainfo.xml
-      - install -Dm644 icon.svg /app/share/icons/hicolor/scalable/apps/$FLATPAK_ID.svg
       - >
         for size in {32,64,128,256}; do
           rsvg-convert icon.svg -w "$size" -h "$size" -a -f png -o "$size.png";

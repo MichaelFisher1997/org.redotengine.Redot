@@ -8,38 +8,35 @@ This repository provides multiple installation options for Redot Engine, current
 ### Flatpak Installation
 
 This version of Redot via Flatpak is not available on Flathub yet, but you can install it manually
-by downloading the necessary files.
+by building it from this repository.
 
 #### Steps to Install Flatpak Version:
 
-**1. Download the Flatpak artifact:**
+**1. Build the Flatpak:**
 
-Choose one of the following download methods:
-
-- **Manual Download**:
-
-  Visit
-  [this release page](https://github.com/Redot-Engine/org.redotengine.Redot/releases/latest)
-  and download the file named `Redot.flatpak`.
-
-- **Download via `curl`**:
+- Clone this repository and navigate to its directory
+- Run the following command to build and install the Flatpak:
 
   ```bash
-  curl -L https://github.com/Redot-Engine/org.redotengine.Redot/releases/download/v4.3-stable/Redot.flatpak > Redot.flatpak
+  flatpak-builder --user --install --force-clean build-dir org.redotengine.Redot.yaml
   ```
 
-**2. Install the Flatpak:**
+**2. Run Redot Engine:**
 
-- Install the downloaded `.flatpak` file:
+- Launch Redot Engine using:
 
   ```bash
-  flatpak install --user Redot.flatpak
+  flatpak run org.redotengine.Redot
   ```
 
 #### Updating the Flatpak Version
 
-For now, Flatpak updates aren't automatic. You'll need to manually download and install the latest
-file each time a new version is released, following the above procedure.
+For now, Flatpak updates aren't automatic. To update to the latest version:
+
+1. Pull the latest changes from this repository
+2. Rebuild and reinstall the Flatpak using the same command as above
+
+Note: The manifest has been updated to use Redot Engine version 4.3.1-stable with all necessary dependencies.
 
 #### Additional Steps for Using External Tools in Flatpak:
 
