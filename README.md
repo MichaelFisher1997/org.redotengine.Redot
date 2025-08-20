@@ -1,7 +1,8 @@
 # Redot Engine Installer (Flatpak & Snap)
 
 This repository provides multiple installation options for Redot Engine, currently supporting both
-**Flatpak** and **Snap** mechanisms.
+**Flatpak** and **Snap** mechanisms. The Flatpak version downloads pre-built binaries from the
+official Redot Engine releases for faster installation.
 
 ## Installation Options
 
@@ -12,16 +13,31 @@ by building it from this repository.
 
 #### Steps to Install Flatpak Version:
 
-**1. Build the Flatpak:**
+**1. Install Prerequisites:**
 
-- Clone this repository and navigate to its directory
+First, add Flathub remote and install the Flatpak runtime:
+
+```bash
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.freedesktop.Sdk//24.08 -y
+```
+
+**2. Build the Flatpak:**
+
+- Clone this repository with submodules and navigate to its directory:
+
+  ```bash
+  git clone --recursive https://github.com/Redot-Engine/org.redotengine.Redot.git
+  cd org.redotengine.Redot/
+  ```
+
 - Run the following command to build and install the Flatpak:
 
   ```bash
   flatpak-builder --user --install --force-clean build-dir org.redotengine.Redot.yaml
   ```
 
-**2. Run Redot Engine:**
+**3. Run Redot Engine:**
 
 - Launch Redot Engine using:
 
@@ -31,12 +47,14 @@ by building it from this repository.
 
 #### Updating the Flatpak Version
 
-For now, Flatpak updates aren't automatic. To update to the latest version:
+Updates are handled automatically via GitHub Actions that check for new Redot Engine releases daily.
+When a new stable release is available, a pull request is automatically created to update the manifest.
 
+To update manually:
 1. Pull the latest changes from this repository
 2. Rebuild and reinstall the Flatpak using the same command as above
 
-Note: The manifest has been updated to use Redot Engine version 4.3.1-stable with all necessary dependencies.
+Note: The manifest downloads pre-built binaries from official Redot Engine releases and is currently set to version 4.3.1-stable.
 
 #### Additional Steps for Using External Tools in Flatpak:
 
@@ -125,16 +143,21 @@ This ensures that the editor is launched outside the sandbox.
 
 - C#/Mono support via org.redotengine.RedotSharp is **not yet supported** at this time.
 
-## Building from the Source (Flatpak)
+## Building the Flatpak Package
 
+The Flatpak manifest downloads pre-built binaries from official Redot Engine releases rather than
+compiling from source, making builds much faster.
+
+**Quick build:**
 ```bash
 git clone --recursive https://github.com/Redot-Engine/org.redotengine.Redot.git
 cd org.redotengine.Redot/
-git submodule init
-git submodule update
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install --user flathub org.freedesktop.Sdk//24.08 -y
-flatpak-builder --force-clean --install --user -y builddir org.redotengine.Redot.yaml
+flatpak-builder --force-clean --install --user -y build-dir org.redotengine.Redot.yaml
 ```
+
+**Detailed steps:**
 
 1. Ensure you have Git installed. Follow the
    [Flatpak builder setup guide](https://docs.flatpak.org/en/latest/first-build.html).
@@ -144,13 +167,15 @@ flatpak-builder --force-clean --install --user -y builddir org.redotengine.Redot
    ```bash
    git clone --recursive https://github.com/Redot-Engine/org.redotengine.Redot.git
    cd org.redotengine.Redot/
-   git submodule init
-   git submodule update
+   flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
    flatpak install --user flathub org.freedesktop.Sdk//24.08 -y
    ```
 
-3. Build and install the Flatpak (using ccache for faster builds):
+3. Build and install the Flatpak:
 
    ```bash
-   flatpak-builder --force-clean --install --user --ccache -y builddir org.redotengine.Redot.yaml
+   flatpak-builder --force-clean --install --user -y build-dir org.redotengine.Redot.yaml
    ```
+
+The build process downloads the official Redot Engine binary release and packages it with the
+necessary runtime dependencies.

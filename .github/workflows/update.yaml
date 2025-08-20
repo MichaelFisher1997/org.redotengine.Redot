@@ -1,0 +1,106 @@
+name: Auto-update Redot Engine
+
+on:
+  schedule:
+    # Check for updates daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest Redot release
+        id: latest_release
+        run: |
+          # Get latest stable release (not pre-release)
+          LATEST=$(curl -s "https://api.github.com/repos/Redot-Engine/redot-engine/releases" | \
+            jq -r '[.[] | select(.prerelease == false and .tag_name | test("redot-.*-stable$"))] | sort_by(.created_at) | reverse | .[0].tag_name')
+          echo "latest_tag=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest release: $LATEST"
+
+      - name: Check current version in manifest
+        id: current_version
+        run: |
+          # Extract current version from manifest URL
+          CURRENT=$(grep -oP 'redot-engine/releases/download/redot-\K[^/]+' org.redotengine.Redot.yaml | head -1)
+          echo "current_tag=redot-$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: redot-$CURRENT"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          if [ "${{ steps.latest_release.outputs.latest_tag }}" != "${{ steps.current_version.outputs.current_tag }}" ]; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "Update needed: ${{ steps.current_version.outputs.current_tag }} -> ${{ steps.latest_release.outputs.latest_tag }}"
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+            echo "No update needed"
+          fi
+
+      - name: Download and verify new release
+        if: steps.compare.outputs.update_needed == 'true'
+        id: verify_release
+        run: |
+          TAG="${{ steps.latest_release.outputs.latest_tag }}"
+          VERSION="${TAG#redot-}"
+          
+          # Download the binary release
+          BINARY_URL="https://github.com/Redot-Engine/redot-engine/releases/download/${TAG}/Redot_v${VERSION}_linux.x86_64.zip"
+          echo "Downloading: $BINARY_URL"
+          
+          curl -L "$BINARY_URL" -o "/tmp/redot_binary.zip"
+          
+          # Calculate SHA256
+          SHA256=$(sha256sum "/tmp/redot_binary.zip" | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "binary_url=$BINARY_URL" >> $GITHUB_OUTPUT
+          
+          echo "SHA256: $SHA256"
+          echo "Version: $VERSION"
+
+      - name: Update manifest
+        if: steps.compare.outputs.update_needed == 'true'
+        run: |
+          VERSION="${{ steps.verify_release.outputs.version }}"
+          SHA256="${{ steps.verify_release.outputs.sha256 }}"
+          BINARY_URL="${{ steps.verify_release.outputs.binary_url }}"
+          
+          # Update the manifest file
+          sed -i "s|# SHA256: .*|# SHA256: $SHA256|" org.redotengine.Redot.yaml
+          sed -i "s|sha256: .*|sha256: $SHA256|" org.redotengine.Redot.yaml
+          sed -i "s|url: https://github.com/Redot-Engine/redot-engine/releases/download/redot-.*/Redot_v.*_linux\.x86_64\.zip|url: $BINARY_URL|" org.redotengine.Redot.yaml
+
+      - name: Create pull request
+        if: steps.compare.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            Update Redot Engine to ${{ steps.verify_release.outputs.version }}
+            
+            - Updated binary URL and SHA256 hash
+            - Source: ${{ steps.verify_release.outputs.binary_url }}
+            - SHA256: ${{ steps.verify_release.outputs.sha256 }}
+          title: "Update Redot Engine to v${{ steps.verify_release.outputs.version }}"
+          body: |
+            ## Auto-update: Redot Engine v${{ steps.verify_release.outputs.version }}
+            
+            This PR automatically updates the Flatpak manifest to use the latest stable Redot Engine release.
+            
+            **Changes:**
+            - Updated from `${{ steps.current_version.outputs.current_tag }}` to `${{ steps.latest_release.outputs.latest_tag }}`
+            - Updated binary URL: `${{ steps.verify_release.outputs.binary_url }}`
+            - Updated SHA256 hash: `${{ steps.verify_release.outputs.sha256 }}`
+            
+            **Release Notes:** https://github.com/Redot-Engine/redot-engine/releases/tag/${{ steps.latest_release.outputs.latest_tag }}
+            
+            Please review and merge if the update looks correct.
+          branch: auto-update-redot-${{ steps.verify_release.outputs.version }}
+          delete-branch: true
